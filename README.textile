@@ -17,10 +17,25 @@ h2. Configuration
 
 h3. externalConfig.fileName
 
-Specify the name of the extra config file you want to load.  If you want to load multiple files, seperate them with a comma.  e.g.
+Specify the name of the extra config file you want to load.  If you want to load multiple files, separate them with a comma.  e.g.
 
 bc. externalConfig.fileName=/one.config,/two.config,/three.config
 
+h3. externalConfig.fileAbsolutePath
+
+Normally these file are located the conf folder of your application. If you want to specify another folder you can use the 'externalConfig.fileAbsolutePath'
+property in combination with the 'externalConfig.fileName' propery. Like this:
+
+bc. externalConfig.fileAbsolutePath=/usr/share/tomcat/configuration
+externalConfig.fileName=/app.config
+
+h3. externalConfig.fileNameAbsolute
+
+If you need to specify multiple files located at different locations you can use the 'externalConfig.fileNameAbsolute' property. If you want to load multiple files, separate them with a comma.
+
+bc. externalConfig.fileNameAbsolute=/usr/share/tomcat/configuration/app.config, /home/user/app/app.config
+
+
 h2. Usage
 
-p(note). Include the plugin as a dependency in your application.  Make sure your external config file is present (even if empty).  For dev/testing purposes, you can keep this file in your conf folder alongside the other config files.
+p(note). Include the plugin as a dependency in your application. It is no longer necessary for the specified files to exist. ExternalConfig will ignore none existing files. For dev/testing purposes, you can keep this file in your conf folder alongside the other config files.

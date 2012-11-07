@@ -18,9 +18,26 @@ import play.libs.IO;
  * @author Neoh79
  */
 public class PropertiesFileConfigurationPlugin extends PlayPlugin {
+    /**
+     * Key in the property files to denote the filename(s).
+     */
     private static final String EC_FILENAME = "externalConfig.fileName";
+
+    /**
+     * Key in the property files to denote the absolute filename prefix for the
+     * filename(s) mentioned in 'externalConfig.fileName'.
+     */
     private static final String EC_FILE_ABSOLUTE_PATH = "externalConfig.fileAbsolutePath";
+
+    /**
+     * Key in the property files to denote the filename(s) using the absolute
+     * file path(s).
+     */
     private static final String EC_ABSOLUTE_FILENAME = "externalConfig.fileNameAbsolute";
+
+    /**
+     * The platform independent file separator.
+     */
     private static final String SEPARATOR = System.getProperty("file.separator");
 
     /**
