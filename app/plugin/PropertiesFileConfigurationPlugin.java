@@ -20,6 +20,7 @@ import play.libs.IO;
 public class PropertiesFileConfigurationPlugin extends PlayPlugin {
     private static final String EC_FILENAME = "externalConfig.fileName";
     private static final String EC_FILE_ABSOLUTE_PATH = "externalConfig.fileAbsolutePath";
+    private static final String EC_ABSOLUTE_FILENAME = "externalConfig.fileNameAbsolute";
     private static final String SEPARATOR = System.getProperty("file.separator");
 
     /**
@@ -30,6 +31,7 @@ public class PropertiesFileConfigurationPlugin extends PlayPlugin {
      */
     public final void onConfigurationRead() {
         readPropertiesFromFileName();
+        readPropertiesFromAbsolutePath();
     }
 
     /**
@@ -76,9 +78,46 @@ public class PropertiesFileConfigurationPlugin extends PlayPlugin {
                 Logger.error("Error when loading file " + propertiesFilenameAndPath + ". Check your '" + EC_FILENAME
                         + "' property.");
             } catch (RuntimeException e) {
-                Logger.error("Error when loading file " + propertiesFilenameAndPath + ". Ignoring the file.");
+                Logger.warn("Error when loading file " + propertiesFilenameAndPath + ". Ignoring the file.");
             } catch (FileNotFoundException e) {
                 Logger.warn("Configuration file '" + propertiesFilenameAndPath + "' is not found. Ignoring the file.");
+            }
+        }
+    }
+
+    /**
+     * Read 0, 1 or more files from files mentioned in the
+     * 'externalConfig.fileNameAbsolute' property. This property should contain
+     * comma separated absolute file paths.
+     */
+    private void readPropertiesFromAbsolutePath() {
+        String absoluteFilenameValue = Play.configuration.getProperty(EC_ABSOLUTE_FILENAME);
+        InputStream is;
+
+        String[] propertiesFilenames = absoluteFilenameValue.split(",");
+
+        for (String propertiesFilename : propertiesFilenames) {
+            is = null;
+
+            try {
+                is = new FileInputStream(propertiesFilename);
+                Logger.warn("Configuration file '" + propertiesFilename
+                        + "' (absolute path) is not found. Ignoring the file.");
+                Properties properties = IO.readUtf8Properties(is);
+
+                Logger.info("Loading configuration from " + propertiesFilename);
+                for (Entry<Object, Object> entry : properties.entrySet()) {
+                    Play.configuration.setProperty((String) entry.getKey(), (String) entry.getValue());
+                }
+
+            } catch (NullPointerException e) {
+                Logger.error("Error when loading file " + propertiesFilename + " (absolute path). Check your '"
+                        + EC_FILENAME + "' property.");
+            } catch (RuntimeException e) {
+                Logger.error("Error when loading file " + propertiesFilename + " (absolute path). Ignoring the file.");
+            } catch (FileNotFoundException e) {
+                Logger.warn("Configuration file '" + propertiesFilename
+                        + "' (absolute path) is not found. Ignoring the file.");
             }
         }
     }
