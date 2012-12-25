@@ -73,6 +73,11 @@ public class PropertiesFileConfigurationPlugin extends PlayPlugin {
         String propertiesFilenameAndPath;
         InputStream is;
 
+        if (filenameValue == null || filenameValue.length() == 0) {
+            play.Logger.debug(EC_FILENAME + " is empty so ignoring this property");
+            return;
+        }
+
         String[] propertiesFilenames = filenameValue.split(",");
 
         for (String propertiesFilename : propertiesFilenames) {
@@ -120,7 +125,10 @@ public class PropertiesFileConfigurationPlugin extends PlayPlugin {
     private void readPropertiesFromAbsolutePath() {
         String absoluteFilenameValue = Play.configuration.getProperty(EC_ABSOLUTE_FILENAME);
         InputStream is;
-
+        if (absoluteFilenameValue == null || absoluteFilenameValue.length() == 0) {
+            play.Logger.debug(EC_ABSOLUTE_FILENAME + " is empty so ignoring this property");
+            return;
+        }
         String[] propertiesFilenames = absoluteFilenameValue.split(",");
 
         for (String propertiesFilename : propertiesFilenames) {
@@ -150,7 +158,13 @@ public class PropertiesFileConfigurationPlugin extends PlayPlugin {
     }
 
     public void readPropertiesFromURL() {
-        String[] propertiesFilenames = Play.configuration.getProperty(EC_URL, "/" + Play.id + ".properties").split(",");
+        String urlValue = Play.configuration.getProperty(EC_URL, "/" + Play.id + ".properties");
+
+        if (urlValue == null || urlValue.length() == 0) {
+            play.Logger.debug(EC_URL + " is empty so ignoring this property");
+            return;
+        }
+        String[] propertiesFilenames = urlValue.split(",");
 
         for (String propertiesFilename : propertiesFilenames) {
             Logger.info("Loading configuration from " + propertiesFilename);
@@ -171,10 +185,10 @@ public class PropertiesFileConfigurationPlugin extends PlayPlugin {
                         Play.configuration.setProperty((String) entry.getKey(), (String) entry.getValue());
                     }
                 } else {
-                    Logger.error("Unable to load properties from URL: " + propertiesFilename);
+                    Logger.error("Unable to load properties from URL: " + propertiesFilename + ". Ignoring this file.");
                 }
             } catch (IOException e) {
-                Logger.error(e, "Unable to load properties from URL: " + propertiesFilename);
+                Logger.error("Unable to load file from URL: " + propertiesFilename + ". Ignoring this file.");
             }
         }
     }

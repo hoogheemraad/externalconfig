@@ -35,6 +35,11 @@ If you need to specify multiple files located at different locations you can use
 
 bc. externalConfig.fileNameAbsolute=/usr/share/tomcat/configuration/app.config, /home/user/app/app.config
 
+h3. externalConfig.URL
+
+If you want to load a properties file from an URL you can use the externalConfig.URL property. Once again you can load multiple files by separating them with a comma. Be aware of the fact that loading property files over a network may be insecure. Externalconfig does not support authentication so the file has to be publicly accessible. Do not keep sensitive information within these files unless you know what you are doing! 
+
+bc. externalConfig.URL=http://localhost:9000/public/sample.properties
 
 h2. Usage
 
