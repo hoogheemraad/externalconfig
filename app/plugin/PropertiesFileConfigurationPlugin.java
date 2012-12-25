@@ -2,7 +2,9 @@ package plugin;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 import java.util.Map.Entry;
 import java.util.Properties;
 
@@ -16,6 +18,7 @@ import play.libs.IO;
  * @author Rugbyhead (Original)
  * @author Hoogheemraad
  * @author Neoh79
+ * @author Rphutchinson
  */
 public class PropertiesFileConfigurationPlugin extends PlayPlugin {
     /**
@@ -36,6 +39,12 @@ public class PropertiesFileConfigurationPlugin extends PlayPlugin {
     private static final String EC_ABSOLUTE_FILENAME = "externalConfig.fileNameAbsolute";
 
     /**
+     * Key in the property files to denote the filename(s) using the absolute
+     * file path(s).
+     */
+    private static final String EC_URL = "externalConfig.URL";
+
+    /**
      * The platform independent file separator.
      */
     private static final String SEPARATOR = System.getProperty("file.separator");
@@ -49,6 +58,7 @@ public class PropertiesFileConfigurationPlugin extends PlayPlugin {
     public final void onConfigurationRead() {
         readPropertiesFromFileName();
         readPropertiesFromAbsolutePath();
+        readPropertiesFromURL();
     }
 
     /**
@@ -137,5 +147,45 @@ public class PropertiesFileConfigurationPlugin extends PlayPlugin {
                         + "' (absolute path) is not found. Ignoring the file.");
             }
         }
+    }
+
+    public void readPropertiesFromURL() {
+        String[] propertiesFilenames = Play.configuration.getProperty(EC_URL, "/" + Play.id + ".properties").split(",");
+
+        for (String propertiesFilename : propertiesFilenames) {
+            Logger.info("Loading configuration from " + propertiesFilename);
+
+            Properties properties = null;
+            try {
+                if (isUrl(propertiesFilename)) {
+                    properties = new Properties();
+
+                    URL url = new URL(propertiesFilename);
+                    url.openConnection();
+
+                    properties.load(url.openStream());
+                }
+
+                if (properties != null) {
+                    for (Entry<Object, Object> entry : properties.entrySet()) {
+                        Play.configuration.setProperty((String) entry.getKey(), (String) entry.getValue());
+                    }
+                } else {
+                    Logger.error("Unable to load properties from URL: " + propertiesFilename);
+                }
+            } catch (IOException e) {
+                Logger.error(e, "Unable to load properties from URL: " + propertiesFilename);
+            }
+        }
+    }
+
+    /**
+     * Determines if the given String represents a potentially valid URL.
+     * @param value
+     *            String value to check and see if it represents a URL.
+     * @return whether the given String represents a potentially valid URL.
+     */
+    private static boolean isUrl(String value) {
+        return value != null && (value.startsWith("http://") || value.startsWith("https://"));
     }
 }
