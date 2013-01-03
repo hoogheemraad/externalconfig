@@ -68,13 +68,15 @@ public class PropertiesFileConfigurationPlugin extends PlayPlugin {
      * the filenames.
      */
     private void readPropertiesFromFileName() {
-        String filenameValue = Play.configuration.getProperty(EC_FILENAME, "/" + Play.id + ".properties");
+        String filenameValue = Play.configuration.getProperty(EC_FILENAME);
+        String defaultFilename = "/" + Play.id + ".properties";
         String propertiesFileAbsolutePath = Play.configuration.getProperty(EC_FILE_ABSOLUTE_PATH);
         String propertiesFilenameAndPath;
         InputStream is;
 
         if (filenameValue == null || filenameValue.length() == 0) {
-            play.Logger.debug(EC_FILENAME + " is empty so ignoring this property");
+            play.Logger.debug(EC_FILENAME + " is empty so trying the default: " + defaultFilename);
+            filenameValue = defaultFilename;
             return;
         }
 
@@ -86,12 +88,14 @@ public class PropertiesFileConfigurationPlugin extends PlayPlugin {
 
             try {
                 if (propertiesFileAbsolutePath != null && propertiesFileAbsolutePath.length() > 0) {
+
                     if (propertiesFilename.startsWith("/") || propertiesFilename.startsWith("/")) {
                         propertiesFilename = propertiesFilename.substring(1);
                     }
                     propertiesFilenameAndPath = propertiesFileAbsolutePath + SEPARATOR + propertiesFilename;
                     is = new FileInputStream(propertiesFilenameAndPath);
                 } else {
+                    propertiesFilenameAndPath = propertiesFilename;
                     is = this.getClass().getResourceAsStream(propertiesFilename);
                 }
 
@@ -100,11 +104,8 @@ public class PropertiesFileConfigurationPlugin extends PlayPlugin {
                             + "' is not found. Ignoring the file.");
                 } else {
                     Properties properties = IO.readUtf8Properties(is);
-
                     Logger.info("Loading configuration from " + propertiesFilenameAndPath);
-                    for (Entry<Object, Object> entry : properties.entrySet()) {
-                        Play.configuration.setProperty((String) entry.getKey(), (String) entry.getValue());
-                    }
+                    readPropertySet(properties);
                 }
             } catch (NullPointerException e) {
                 Logger.error("Error when loading file " + propertiesFilenameAndPath + ". Check your '" + EC_FILENAME
@@ -125,6 +126,7 @@ public class PropertiesFileConfigurationPlugin extends PlayPlugin {
     private void readPropertiesFromAbsolutePath() {
         String absoluteFilenameValue = Play.configuration.getProperty(EC_ABSOLUTE_FILENAME);
         InputStream is;
+
         if (absoluteFilenameValue == null || absoluteFilenameValue.length() == 0) {
             play.Logger.debug(EC_ABSOLUTE_FILENAME + " is empty so ignoring this property");
             return;
@@ -141,13 +143,11 @@ public class PropertiesFileConfigurationPlugin extends PlayPlugin {
                 Properties properties = IO.readUtf8Properties(is);
 
                 Logger.info("Loading configuration from " + propertiesFilename);
-                for (Entry<Object, Object> entry : properties.entrySet()) {
-                    Play.configuration.setProperty((String) entry.getKey(), (String) entry.getValue());
-                }
+                readPropertySet(properties);
 
             } catch (NullPointerException e) {
                 Logger.error("Error when loading file " + propertiesFilename + " (absolute path). Check your '"
-                        + EC_FILENAME + "' property.");
+                        + EC_FILENAME + "' property. Ignoring the value.");
             } catch (RuntimeException e) {
                 Logger.error("Error when loading file " + propertiesFilename + " (absolute path). Ignoring the file.");
             } catch (FileNotFoundException e) {
@@ -158,7 +158,7 @@ public class PropertiesFileConfigurationPlugin extends PlayPlugin {
     }
 
     public void readPropertiesFromURL() {
-        String urlValue = Play.configuration.getProperty(EC_URL, "/" + Play.id + ".properties");
+        String urlValue = Play.configuration.getProperty(EC_URL);
 
         if (urlValue == null || urlValue.length() == 0) {
             play.Logger.debug(EC_URL + " is empty so ignoring this property");
@@ -181,9 +181,7 @@ public class PropertiesFileConfigurationPlugin extends PlayPlugin {
                 }
 
                 if (properties != null) {
-                    for (Entry<Object, Object> entry : properties.entrySet()) {
-                        Play.configuration.setProperty((String) entry.getKey(), (String) entry.getValue());
-                    }
+                    readPropertySet(properties);
                 } else {
                     Logger.error("Unable to load properties from URL: " + propertiesFilename + ". Ignoring this file.");
                 }
@@ -201,5 +199,29 @@ public class PropertiesFileConfigurationPlugin extends PlayPlugin {
      */
     private static boolean isUrl(String value) {
         return value != null && (value.startsWith("http://") || value.startsWith("https://"));
+    }
+
+    /**
+     * This method actually set the properties into the Play.configuration. If
+     * it encounters Play ID specific keys (denoted with a '%') it will try to
+     * load these too. The idea comes from the
+     * play.ant.PlayConfigurationLoadTask.java file of the Play 1.2.5 framework
+     * files.
+     * @param properties
+     */
+    private static void readPropertySet(Properties properties) {
+        for (Entry<Object, Object> entry : properties.entrySet()) {
+            String key = (String) entry.getKey();
+            String value = (String) entry.getValue();
+
+            if (key.startsWith("%")) {
+                if (Play.id.length() > 0 && key.startsWith("%" + Play.id + ".")) {
+                    key = key.substring(("%" + Play.id + ".").length());
+                    Play.configuration.setProperty(key, value);
+                }
+            } else {
+                Play.configuration.setProperty(key, value);
+            }
+        }
     }
 }
